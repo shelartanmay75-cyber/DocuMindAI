@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DocuMind AI — Upload. Ask. Understand.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<!-- Real extractors -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-base:#080D1A;
+  --bg-surface:#0F1627;
+  --bg-card:#141E35;
+  --bg-hover:#1A2540;
+  --border:#1E2D4A;
+  --border-glow:#2DD4BF44;
+  --teal:#2DD4BF;
+  --teal-dim:#1AA896;
+  --teal-glow:#2DD4BF18;
+  --text-primary:#E2E8F0;
+  --text-body:#94A3B8;
+  --text-muted:#4A6080;
+  --purple:#818CF8;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg-base);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;height:64px;background:rgba(8,13,26,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:.6rem;font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;letter-spacing:-.02em;color:var(--text-primary);text-decoration:none}
+.nav-logo span{color:var(--teal)}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--teal),#818CF8);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{color:var(--text-body);font-size:.875rem;text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--text-primary)}
+.nav-cta{background:var(--teal);color:var(--bg-base);border:none;border-radius:8px;padding:.5rem 1.2rem;font-size:.875rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:background .2s}
+.nav-cta:hover{background:var(--teal-dim)}
+
+/* HERO */
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 2rem 4rem;overflow:hidden}
+.hero-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.28}
+.orb-1{width:500px;height:500px;background:#2DD4BF;top:-100px;left:-100px;animation:drift 10s ease-in-out infinite alternate}
+.orb-2{width:400px;height:400px;background:#818CF8;bottom:-80px;right:-60px;animation:drift 13s ease-in-out infinite alternate-reverse}
+.orb-3{width:250px;height:250px;background:#0EA5E9;top:40%;left:50%;transform:translate(-50%,-50%);animation:drift 8s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(28px,18px) scale(1.07)}}
+
+.particles{position:absolute;inset:0;pointer-events:none}
+.particle{position:absolute;width:34px;height:44px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;opacity:0;animation:floatUp var(--dur,8s) ease-in-out var(--delay,0s) infinite}
+.particle::before{content:'';position:absolute;top:8px;left:8px;right:8px;height:2px;background:var(--teal);opacity:.6;border-radius:2px}
+.particle::after{content:'';position:absolute;top:14px;left:8px;right:14px;height:2px;background:var(--text-muted);border-radius:2px}
+@keyframes floatUp{0%{opacity:0;transform:translateY(60px) rotate(var(--rot,-5deg))}20%{opacity:.5}80%{opacity:.3}100%{opacity:0;transform:translateY(-110px) rotate(var(--rot2,8deg))}}
+
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--teal-glow);border:1px solid var(--border-glow);border-radius:100px;padding:.35rem 1rem;font-size:.78rem;font-weight:600;color:var(--teal);letter-spacing:.04em;text-transform:uppercase;margin-bottom:1.5rem}
+.badge-dot{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+.hero h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(2.8rem,6vw,5rem);font-weight:700;line-height:1.06;letter-spacing:-.04em;max-width:800px;margin:0 auto 1rem}
+.hero h1 .hl{background:linear-gradient(135deg,var(--teal),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-tagline{font-size:1.1rem;color:var(--text-body);font-weight:300;letter-spacing:.06em;margin-bottom:2.5rem}
+.hero-tagline span{color:var(--teal);font-weight:500}
+.hero-actions{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-bottom:3.5rem}
+.btn-primary{background:linear-gradient(135deg,var(--teal),#1AB8A6);color:var(--bg-base);border:none;border-radius:10px;padding:.85rem 2rem;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s;font-family:'Inter',sans-serif;box-shadow:0 0 30px #2DD4BF22}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px #2DD4BF44}
+.btn-ghost{background:transparent;color:var(--text-body);border:1px solid var(--border);border-radius:10px;padding:.85rem 2rem;font-size:1rem;font-weight:500;cursor:pointer;transition:border-color .2s,color .2s;font-family:'Inter',sans-serif}
+.btn-ghost:hover{border-color:var(--teal);color:var(--text-primary)}
+.formats-row{display:flex;gap:.65rem;flex-wrap:wrap;justify-content:center;opacity:.65}
+.fmt{display:flex;align-items:center;gap:.35rem;background:var(--bg-card);border:1px solid var(--border);border-radius:100px;padding:.28rem .75rem;font-size:.73rem;color:var(--text-body)}
+
+/* ── MAIN APP ── */
+#app{max-width:1320px;margin:0 auto;padding:5rem 1.5rem}
+.section-title{text-align:center;margin-bottom:3rem}
+.section-title h2{font-family:'Space Grotesk',sans-serif;font-size:2.2rem;font-weight:700;letter-spacing:-.03em;margin-bottom:.5rem}
+.section-title p{color:var(--text-body);font-size:.95rem}
+
+.app-shell{display:grid;grid-template-columns:300px 1fr;height:700px;background:var(--bg-surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 0 80px #2DD4BF08}
+
+/* SIDEBAR */
+.sidebar{background:var(--bg-base);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sb-head{padding:1.2rem 1.2rem .75rem;border-bottom:1px solid var(--border)}
+.sb-head h3{font-family:'Space Grotesk',sans-serif;font-size:.8rem;font-weight:600;color:var(--text-body);text-transform:uppercase;letter-spacing:.09em}
+
+.drop-zone{margin:.85rem 1rem;border:1.5px dashed var(--border);border-radius:12px;padding:1.4rem .75rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--bg-surface)}
+.drop-zone:hover,.drop-zone.over{border-color:var(--teal);background:var(--teal-glow)}
+.dz-icon{font-size:1.7rem;margin-bottom:.4rem}
+.dz-text{font-size:.75rem;color:var(--text-body);line-height:1.5}
+.dz-text strong{color:var(--teal);font-weight:600;display:block;font-size:.8rem;margin-bottom:.15rem}
+#fileInput{display:none}
+
+.add-btn{width:calc(100% - 2rem);margin:0 1rem .7rem;background:var(--teal);color:var(--bg-base);border:none;border-radius:8px;padding:.55rem;font-size:.82rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:background .2s}
+.add-btn:hover{background:var(--teal-dim)}
+
+.file-list{flex:1;overflow-y:auto;padding:.25rem .6rem .8rem}
+.file-list::-webkit-scrollbar{width:3px}
+.file-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.fl-label{font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.09em;font-weight:700;padding:.4rem .5rem .35rem}
+
+.file-item{display:flex;align-items:center;gap:.55rem;padding:.55rem .65rem;border-radius:8px;cursor:pointer;transition:background .15s;border:1px solid transparent;margin-bottom:2px;position:relative}
+.file-item:hover{background:var(--bg-hover)}
+.file-item.active{background:var(--teal-glow);border-color:var(--border-glow)}
+.fi-badge{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.72rem;flex-shrink:0;font-weight:700;letter-spacing:0}
+.t-pdf{background:#FF444420;color:#FF7070}
+.t-docx,.t-doc{background:#3B82F620;color:#60A5FA}
+.t-xlsx,.t-xls,.t-csv{background:#22C55E20;color:#4ADE80}
+.t-pptx,.t-ppt{background:#F9731620;color:#FB923C}
+.t-txt{background:#A855F720;color:#C084FC}
+.fi-meta{flex:1;min-width:0}
+.fi-name{font-size:.77rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary)}
+.fi-info{font-size:.67rem;color:var(--text-muted)}
+.fi-rm{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.8rem;opacity:0;padding:2px;transition:opacity .15s;flex-shrink:0}
+.file-item:hover .fi-rm{opacity:1}
+
+/* processing bar */
+.extract-bar{height:2px;background:var(--teal);border-radius:2px;width:0%;transition:width .3s;margin-top:2px}
+.fi-status{font-size:.62rem;margin-top:1px}
+.fi-status.ok{color:var(--teal)}
+.fi-status.err{color:#FF7070}
+.fi-status.loading{color:var(--amber,#FBBF24)}
+
+.empty-state{padding:1.2rem .5rem;text-align:center;color:var(--text-muted);font-size:.78rem;display:flex;flex-direction:column;align-items:center;gap:.4rem}
+.empty-icon{font-size:1.8rem;opacity:.3}
+
+/* Token count */
+.token-bar{padding:.5rem 1rem .6rem;border-top:1px solid var(--border);font-size:.68rem;color:var(--text-muted)}
+.token-fill{height:3px;background:linear-gradient(90deg,var(--teal),var(--purple));border-radius:2px;margin-top:.35rem;transition:width .4s}
+
+/* CHAT */
+.chat-area{display:flex;flex-direction:column;overflow:hidden;position:relative}
+.chat-head{padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem}
+.ch-info{flex:1}
+.ch-info h3{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600}
+.ch-info p{font-size:.73rem;color:var(--text-muted);margin-top:.1rem}
+.rag-badge{display:flex;align-items:center;gap:.35rem;background:var(--teal-glow);border:1px solid var(--border-glow);border-radius:100px;padding:.28rem .7rem;font-size:.68rem;color:var(--teal);font-weight:700;white-space:nowrap}
+
+.suggestions-wrap{padding:.7rem 1.4rem .4rem;border-bottom:1px solid var(--border);display:none}
+.sugg-label{font-size:.67rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.09em;font-weight:700;margin-bottom:.45rem}
+.sugg-chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.sugg-chip{background:var(--bg-card);border:1px solid var(--border);border-radius:100px;padding:.3rem .8rem;font-size:.75rem;color:var(--text-body);cursor:pointer;transition:border-color .2s,color .2s,background .2s;white-space:nowrap}
+.sugg-chip:hover{border-color:var(--teal);color:var(--text-primary);background:var(--teal-glow)}
+
+.messages{flex:1;overflow-y:auto;padding:1.25rem 1.4rem;display:flex;flex-direction:column;gap:.9rem}
+.messages::-webkit-scrollbar{width:4px}
+.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.75rem;padding:2rem}
+.welcome-icon{width:68px;height:68px;background:linear-gradient(135deg,var(--teal-glow),#818CF811);border:1px solid var(--border-glow);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;margin-bottom:.25rem}
+.welcome h3{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:600}
+.welcome p{color:var(--text-body);font-size:.85rem;max-width:380px;line-height:1.65}
+.welcome .hint{font-size:.75rem;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.45rem .8rem;margin-top:.25rem}
+
+.msg{display:flex;gap:.65rem;max-width:94%}
+.msg.user{flex-direction:row-reverse;align-self:flex-end}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0}
+.msg.user .av{background:var(--teal);color:var(--bg-base)}
+.msg.ai .av{background:linear-gradient(135deg,var(--teal),var(--purple));color:#fff;font-size:.65rem}
+.bubble{border-radius:14px;padding:.7rem .95rem;font-size:.86rem;line-height:1.65;word-break:break-word}
+.msg.user .bubble{background:var(--teal-glow);border:1px solid var(--border-glow);color:var(--text-primary);border-top-right-radius:4px}
+.msg.ai .bubble{background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-top-left-radius:4px}
+.bubble p{margin-bottom:.4rem}
+.bubble p:last-child{margin-bottom:0}
+.bubble strong{color:var(--teal);font-weight:600}
+.bubble ul,.bubble ol{padding-left:1.2rem;margin:.3rem 0}
+.bubble li{margin-bottom:.2rem}
+.src-tag{font-size:.68rem;color:var(--teal);margin-top:.5rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap}
+
+/* thinking */
+.thinking-dots{display:flex;gap:4px;padding:.3rem 0}
+.thinking-dots span{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:blink .9s ease-in-out infinite}
+.thinking-dots span:nth-child(2){animation-delay:.2s}
+.thinking-dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{transform:scale(.55);opacity:.25}40%{transform:scale(1);opacity:1}}
+
+/* Input */
+.input-area{padding:.85rem 1.4rem 1rem;border-top:1px solid var(--border)}
+.input-wrap{display:flex;gap:.65rem;align-items:flex-end;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:.55rem .55rem .55rem .9rem;transition:border-color .2s,box-shadow .2s}
+.input-wrap:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-glow)}
+textarea.qi{flex:1;background:none;border:none;outline:none;font-family:'Inter',sans-serif;font-size:.875rem;color:var(--text-primary);resize:none;line-height:1.55;max-height:110px;min-height:22px}
+textarea.qi::placeholder{color:var(--text-muted)}
+.send{width:36px;height:36px;background:var(--teal);color:var(--bg-base);border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .2s,transform .15s;font-size:.9rem}
+.send:hover{background:var(--teal-dim);transform:scale(1.05)}
+.send:disabled{background:var(--border);cursor:not-allowed;transform:none;color:var(--text-muted)}
+.input-note{font-size:.67rem;color:var(--text-muted);margin-top:.45rem;text-align:center}
+
+/* HOW IT WORKS */
+#how{max-width:1100px;margin:0 auto;padding:4rem 1.5rem}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin-top:3rem}
+.step{background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:1.8rem;transition:border-color .3s,transform .3s;position:relative;overflow:hidden}
+.step::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:0;transition:opacity .3s}
+.step:hover{border-color:var(--teal);transform:translateY(-4px)}
+.step:hover::before{opacity:1}
+.step-n{font-family:'Space Grotesk',sans-serif;font-size:2.6rem;font-weight:700;color:var(--border);line-height:1;margin-bottom:.8rem}
+.step-i{font-size:1.6rem;margin-bottom:.6rem}
+.step h4{font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:600;margin-bottom:.4rem}
+.step p{font-size:.83rem;color:var(--text-body);line-height:1.6}
+
+/* USE CASES */
+#uc{max-width:1100px;margin:0 auto;padding:2rem 1.5rem 5rem}
+.uc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:3rem}
+.uc-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:1.4rem;transition:border-color .2s}
+.uc-card:hover{border-color:var(--teal)}
+.uc-icon{font-size:1.8rem;margin-bottom:.6rem}
+.uc-tag{display:inline-block;background:var(--teal-glow);color:var(--teal);border-radius:100px;padding:.18rem .55rem;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem}
+.uc-card h4{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.35rem}
+.uc-card p{font-size:.8rem;color:var(--text-body);line-height:1.6}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:1.75rem 2.5rem;display:flex;align-items:center;justify-content:space-between;color:var(--text-muted);font-size:.75rem}
+.foot-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--text-primary);font-size:.9rem}
+.foot-logo span{color:var(--teal)}
+
+/* Toast */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:.75rem 1.1rem;font-size:.8rem;color:var(--text-primary);z-index:999;animation:toastIn .3s ease;max-width:300px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.toast.err{border-color:#FF707066;color:#FF9090}
+.toast.ok{border-color:var(--border-glow);color:var(--teal)}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:900px){
+  .app-shell{grid-template-columns:1fr;height:auto}
+  .sidebar{max-height:260px;border-right:none;border-bottom:1px solid var(--border)}
+  .chat-area{height:520px}
+  .steps,.uc-grid{grid-template-columns:1fr}
+  .nav-links{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="logo-icon">🧠</div>
+    DocuMind<span> AI</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#app">Try It</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#uc">Use Cases</a></li>
+  </ul>
+  <button class="nav-cta" onclick="scrollTo('#app')">Get Started</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="particles" id="particles"></div>
+
+  <div class="hero-badge"><div class="badge-dot"></div>Real Document Extraction · No Guessing</div>
+  <h1>Your Documents.<br>Your <span class="hl">Questions.</span><br>Real Answers.</h1>
+  <p class="hero-tagline"><span>Upload.</span> &nbsp;Ask. &nbsp;<span>Understand.</span></p>
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="scrollTo('#app')">Start Asking →</button>
+    <button class="btn-ghost" onclick="scrollTo('#how')">How It Works</button>
+  </div>
+  <div class="formats-row">
+    <div class="fmt">📄 PDF</div>
+    <div class="fmt">📊 Excel</div>
+    <div class="fmt">📝 Word</div>
+    <div class="fmt">📑 PowerPoint</div>
+    <div class="fmt">📃 TXT</div>
+    <div class="fmt">📋 CSV</div>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app">
+  <div style="max-width:1320px;margin:0 auto;padding:5rem 1.5rem">
+    <div class="section-title">
+      <h2>Try DocuMind <span style="color:var(--teal)">AI</span></h2>
+      <p>Upload real files — the AI reads every word and answers from actual content</p>
+    </div>
+
+    <div class="app-shell">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sb-head"><h3>Your Documents</h3></div>
+        <div class="drop-zone" id="dropZone"
+          onclick="document.getElementById('fileInput').click()"
+          ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <div class="dz-icon">📂</div>
+          <div class="dz-text"><strong>Drop files here</strong>PDF, Word, Excel, PPTX, TXT, CSV</div>
+          <input type="file" id="fileInput" multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+            onchange="onFileSelect(event)"/>
+        </div>
+        <button class="add-btn" onclick="document.getElementById('fileInput').click()">+ Add Files</button>
+        <div class="file-list" id="fileList">
+          <div class="empty-state" id="emptyMsg">
+            <span class="empty-icon">🗂️</span>
+            <span>No files yet.<br>Upload to begin.</span>
+          </div>
+        </div>
+        <div class="token-bar" id="tokenBar" style="display:none">
+          <span id="tokenTxt">0 chars extracted</span>
+          <div class="token-fill" id="tokenFill" style="width:0%"></div>
+        </div>
+      </aside>
+
+      <!-- CHAT -->
+      <main class="chat-area">
+        <div class="chat-head">
+          <div class="ch-info">
+            <h3>Document Assistant</h3>
+            <p id="chatStatus">Upload a file to begin</p>
+          </div>
+          <div class="rag-badge">
+            <span style="width:5px;height:5px;background:var(--teal);border-radius:50%;animation:pulse 2s infinite;display:inline-block"></span>
+            RAG · Real Extraction
+          </div>
+        </div>
+
+        <div class="suggestions-wrap" id="suggWrap">
+          <div class="sugg-label">💡 Suggested questions</div>
+          <div class="sugg-chips" id="suggChips"></div>
+        </div>
+
+        <div class="messages" id="messages">
+          <div class="welcome" id="welcomeEl">
+            <div class="welcome-icon">🧠</div>
+            <h3>Ready to read your documents</h3>
+            <p>Upload any file and DocuMind AI will <strong>actually extract its content</strong> — then answer your questions from what's really inside.</p>
+            <div class="hint">📄 PDF text is extracted page by page · 📊 Excel rows are read · 📝 Word paragraphs are parsed</div>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <div class="input-wrap">
+            <textarea class="qi" id="qi" placeholder="Ask anything about your uploaded documents…" rows="1"
+              onkeydown="onKey(event)" oninput="resize(this)"></textarea>
+            <button class="send" id="sendBtn" onclick="send()" disabled>➤</button>
+          </div>
+          <p class="input-note">Answers are generated only from content extracted from your files</p>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-title">
+    <h2>How It <span style="color:var(--teal)">Works</span></h2>
+    <p>True RAG — your content is extracted in the browser, then sent to Claude AI</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-n">01</div><div class="step-i">📤</div>
+      <h4>Upload & Extract</h4>
+      <p>Your file is parsed right in the browser. PDF.js reads every page of a PDF, Mammoth parses Word, SheetJS reads Excel — all text extracted locally.</p>
+    </div>
+    <div class="step">
+      <div class="step-n">02</div><div class="step-i">🔍</div>
+      <h4>Content Is Sent to Claude</h4>
+      <p>The extracted text becomes the context window. Claude reads your actual document — no guessing, no hallucinations about what might be in it.</p>
+    </div>
+    <div class="step">
+      <div class="step-n">03</div><div class="step-i">💬</div>
+      <h4>Grounded Answers</h4>
+      <p>Every answer is derived from your document's real content. If it's not in the file, Claude says so — complete honesty about what the document contains.</p>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section id="uc">
+  <div class="section-title">
+    <h2>Built for <span style="color:var(--teal)">Everyone</span></h2>
+    <p>From classrooms to boardrooms — understand any document, faster</p>
+  </div>
+  <div class="uc-grid">
+    <div class="uc-card"><div class="uc-icon">🎓</div><div class="uc-tag">Students</div><h4>Ace Your Studies</h4><p>Upload textbook chapters, lecture slides, or research PDFs. Get summaries, definitions, and explanations from the actual material.</p></div>
+    <div class="uc-card"><div class="uc-icon">🏢</div><div class="uc-tag">Professionals</div><h4>Work Smarter</h4><p>Dig into lengthy reports and contracts in seconds. Extract key figures, clauses, and action items without reading every page.</p></div>
+    <div class="uc-card"><div class="uc-icon">🔬</div><div class="uc-tag">Researchers</div><h4>Deep Research</h4><p>Upload multiple papers. Ask cross-document questions, find methodologies, or compare findings across your literature corpus.</p></div>
+    <div class="uc-card"><div class="uc-icon">👩‍🏫</div><div class="uc-tag">Educators</div><h4>Prepare Better</h4><p>Generate discussion questions and quizzes directly from your course material. Build lesson content from what's already in your documents.</p></div>
+    <div class="uc-card"><div class="uc-icon">⚖️</div><div class="uc-tag">Legal</div><h4>Parse Contracts</h4><p>Ask plain-language questions about complex legal documents. Find clauses, obligations, and deadlines from the actual contract text.</p></div>
+    <div class="uc-card"><div class="uc-icon">📊</div><div class="uc-tag">Analysts</div><h4>Data Narratives</h4><p>Upload Excel reports and financial statements. Ask about specific figures, totals, and trends — Claude reads your actual numbers.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-logo">DocuMind<span> AI</span></div>
+  <p>Upload. Ask. Understand. — Real document extraction</p>
+  <p>© 2025 DocuMind AI</p>
+</footer>
+
+<script>
+// ── Setup PDF.js worker ──
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── Particles ──
+(()=>{
+  const c=document.getElementById('particles');
+  [{l:'8%',t:'20%'},{l:'14%',t:'68%'},{l:'80%',t:'13%'},{l:'88%',t:'62%'},{l:'46%',t:'84%'},{l:'62%',t:'9%'},{l:'26%',t:'44%'},{l:'73%',t:'79%'}]
+  .forEach((p,i)=>{
+    const el=document.createElement('div');el.className='particle';
+    el.style.cssText=`left:${p.l};top:${p.t};--dur:${7+i*1.3}s;--delay:${i*1.1}s;--rot:${-8+i*3}deg;--rot2:${5-i*2}deg`;
+    c.appendChild(el);
+  });
+})();
+
+function scrollTo(sel){document.querySelector(sel).scrollIntoView({behavior:'smooth'})}
+
+// ── State ──
+const docs=[];       // {name, ext, text, chars}
+let history=[];      // Claude conversation history
+const MAX_CHARS=180000; // safe context limit
+
+// ── File type helpers ──
+const EXT_BADGE={
+  pdf:{label:'PDF',cls:'t-pdf'},
+  doc:{label:'DOC',cls:'t-docx'},docx:{label:'DOCX',cls:'t-docx'},
+  xls:{label:'XLS',cls:'t-xlsx'},xlsx:{label:'XLSX',cls:'t-xlsx'},csv:{label:'CSV',cls:'t-xlsx'},
+  ppt:{label:'PPT',cls:'t-pptx'},pptx:{label:'PPTX',cls:'t-pptx'},
+  txt:{label:'TXT',cls:'t-txt'},
+};
+const SUGGESTIONS={
+  pdf:["Summarize this document","What are the key findings?","List all headings and sections","What conclusions are drawn?","Who or what is this document about?"],
+  docx:["What is the main argument?","List all action items","Find dates and deadlines","Summarize each section","What are the recommendations?"],
+  doc:["What is the main argument?","Summarize this document","Find any dates mentioned"],
+  xlsx:["What columns does this data have?","Summarize the data trends","What are the highest and lowest values?","How many rows of data are there?","Identify any notable patterns"],
+  xls:["What columns does this data have?","Summarize the data","Find the totals"],
+  csv:["Describe the dataset","What are the column names?","Summarize the statistics","Find missing or unusual values"],
+  pptx:["What is this presentation about?","List the slide titles","Summarize the key points","What data or figures are mentioned?"],
+  ppt:["What is this presentation about?","List the slide titles"],
+  txt:["Summarize this text","What are the main topics?","Extract key facts and figures","Who are the key people mentioned?"],
+};
+
+function ext(name){return name.split('.').pop().toLowerCase();}
+function fmtSize(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB';}
+
+// ── Drag & drop ──
+function onDragOver(e){e.preventDefault();document.getElementById('dropZone').classList.add('over');}
+function onDragLeave(){document.getElementById('dropZone').classList.remove('over');}
+function onDrop(e){e.preventDefault();document.getElementById('dropZone').classList.remove('over');handleFiles([...e.dataTransfer.files]);}
+function onFileSelect(e){handleFiles([...e.target.files]);e.target.value='';}
+
+// ── Main file handler ──
+async function handleFiles(files){
+  for(const f of files){
+    const e=ext(f.name);
+    const id='f'+Date.now()+Math.random().toString(36).slice(2);
+    const doc={id,name:f.name,ext:e,text:'',chars:0,status:'loading'};
+    docs.push(doc);
+    renderSidebar();
+    try{
+      doc.text=await extractText(f,e,id);
+      doc.chars=doc.text.length;
+      doc.status='ok';
+    }catch(err){
+      doc.status='err';
+      doc.errMsg=err.message||'Extraction failed';
+    }
+    renderSidebar();
+    updateUI();
+  }
+}
+
+// ── Extraction router ──
+async function extractText(file,e,id){
+  if(e==='pdf')        return await extractPDF(file,id);
+  if(e==='docx'||e==='doc') return await extractWord(file);
+  if(['xlsx','xls'].includes(e)) return await extractExcel(file);
+  if(e==='csv')        return await extractCSV(file);
+  if(['pptx','ppt'].includes(e)) return await extractPPTX(file);
+  if(e==='txt')        return await file.text();
+  throw new Error('Unsupported format');
+}
+
+// ── PDF extraction ──
+async function extractPDF(file,id){
+  const ab=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  const total=pdf.numPages;
+  let out='';
+  for(let i=1;i<=total;i++){
+    const page=await pdf.getPage(i);
+    const content=await page.getTextContent();
+    const pageText=content.items.map(s=>s.str).join(' ');
+    out+=`\n--- Page ${i} ---\n${pageText}`;
+    // Update progress
+    const el=document.querySelector(`[data-id="${id}"] .fi-status`);
+    if(el) el.textContent=`Reading page ${i}/${total}…`;
+  }
+  if(!out.trim()) throw new Error('No text found (scanned PDF?)');
+  return out;
+}
+
+// ── Word extraction ──
+async function extractWord(file){
+  const ab=await file.arrayBuffer();
+  const result=await mammoth.extractRawText({arrayBuffer:ab});
+  if(!result.value.trim()) throw new Error('No text found in document');
+  return result.value;
+}
+
+// ── Excel extraction ──
+async function extractExcel(file){
+  const ab=await file.arrayBuffer();
+  const wb=XLSX.read(ab,{type:'array'});
+  let out='';
+  wb.SheetNames.forEach(name=>{
+    const ws=wb.Sheets[name];
+    const csv=XLSX.utils.sheet_to_csv(ws,{defval:''});
+    if(csv.trim()) out+=`\n=== Sheet: ${name} ===\n${csv}`;
+  });
+  if(!out.trim()) throw new Error('No data found in spreadsheet');
+  return out;
+}
+
+// ── CSV extraction ──
+async function extractCSV(file){
+  const txt=await file.text();
+  if(!txt.trim()) throw new Error('Empty CSV file');
+  return txt;
+}
+
+// ── PPTX extraction ──
+async function extractPPTX(file){
+  // PPTX is a zip; we extract slide XML via JSZip-like approach
+  // Use XLSX (which can handle zip) or read as binary and look for text
+  try{
+    const ab=await file.arrayBuffer();
+    // Try reading with XLSX as a fallback (won't work for pptx natively)
+    // Instead we decode the zip manually using a simple approach
+    const uint8=new Uint8Array(ab);
+    const text=new TextDecoder('utf-8',{fatal:false}).decode(uint8);
+    // Extract text from XML tags <a:t>...</a:t>
+    const matches=[...text.matchAll(/<a:t[^>]*>([^<]+)<\/a:t>/g)];
+    const slideText=matches.map(m=>m[1]).filter(t=>t.trim()).join('\n');
+    if(!slideText) throw new Error('Could not extract text from PPTX');
+    return slideText;
+  }catch(e){
+    throw new Error('PPTX extraction failed: '+e.message);
+  }
+}
+
+// ── Sidebar render ──
+function renderSidebar(){
+  const list=document.getElementById('fileList');
+  if(docs.length===0){
+    list.innerHTML='<div class="empty-state" id="emptyMsg"><span class="empty-icon">🗂️</span><span>No files yet.<br>Upload to begin.</span></div>';
+    return;
+  }
+  const badge=EXT_BADGE;
+  list.innerHTML=`<div class="fl-label">Uploaded (${docs.length})</div>`+docs.map(d=>{
+    const b=badge[d.ext]||{label:d.ext.toUpperCase(),cls:'t-txt'};
+    const statusHtml=d.status==='loading'
+      ?`<div class="fi-status loading">Extracting…</div>`
+      :d.status==='err'
+      ?`<div class="fi-status err">⚠ ${d.errMsg||'Error'}</div>`
+      :`<div class="fi-status ok">✓ ${(d.chars/1000).toFixed(1)}k chars extracted</div>`;
+    return `<div class="file-item" data-id="${d.id}">
+      <div class="fi-badge ${b.cls}">${b.label}</div>
+      <div class="fi-meta">
+        <div class="fi-name" title="${d.name}">${d.name}</div>
+        ${statusHtml}
+      </div>
+      <button class="fi-rm" onclick="removeDoc('${d.id}',event)" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removeDoc(id,e){
+  e.stopPropagation();
+  const i=docs.findIndex(d=>d.id===id);
+  if(i>-1) docs.splice(i,1);
+  renderSidebar();
+  updateUI();
+}
+
+function updateUI(){
+  const ready=docs.filter(d=>d.status==='ok');
+  const totalChars=ready.reduce((s,d)=>s+d.chars,0);
+  const hasReady=ready.length>0;
+
+  document.getElementById('sendBtn').disabled=!hasReady;
+  document.getElementById('chatStatus').textContent=
+    hasReady?`${ready.length} doc${ready.length>1?'s':''} ready · ${(totalChars/1000).toFixed(1)}k chars`
+    :'Extracting…';
+
+  // Token bar
+  const tb=document.getElementById('tokenBar');
+  if(totalChars>0){
+    tb.style.display='block';
+    document.getElementById('tokenTxt').textContent=`${(totalChars/1000).toFixed(1)}k chars extracted`;
+    document.getElementById('tokenFill').style.width=Math.min(100,(totalChars/MAX_CHARS)*100)+'%';
+  } else {
+    tb.style.display='none';
+  }
+
+  // Suggestions
+  if(hasReady){
+    const ws=document.getElementById('welcomeEl');
+    if(ws) ws.style.display='none';
+    showSuggestions(ready);
+  }
+}
+
+function showSuggestions(files){
+  const wrap=document.getElementById('suggWrap');
+  const chips=document.getElementById('suggChips');
+  wrap.style.display='block';
+  const seen=new Set();const list=[];
+  files.forEach(f=>{
+    (SUGGESTIONS[f.ext]||["Summarize this document","What are the main topics?","List key facts"]).forEach(s=>{
+      if(!seen.has(s)){seen.add(s);list.push(s);}
+    });
+  });
+  chips.innerHTML=list.slice(0,7).map(s=>
+    `<button class="sugg-chip" onclick="useChip(this)">${s}</button>`
+  ).join('');
+}
+
+function useChip(el){
+  document.getElementById('qi').value=el.textContent;
+  resize(document.getElementById('qi'));
+  send();
+}
+
+// ── Chat ──
+function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px';}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+
+function buildContext(){
+  const ready=docs.filter(d=>d.status==='ok');
+  if(!ready.length) return '';
+  let ctx='You have access to the following extracted document content:\n\n';
+  let remaining=MAX_CHARS;
+  ready.forEach(d=>{
+    const chunk=d.text.slice(0,remaining);
+    ctx+=`=== FILE: ${d.name} ===\n${chunk}\n\n`;
+    remaining-=chunk.length;
+    if(remaining<=0) return;
+  });
+  return ctx;
+}
+
+function appendMsg(role,html){
+  const msgs=document.getElementById('messages');
+  const ws=document.getElementById('welcomeEl');
+  if(ws) ws.style.display='none';
+  const d=document.createElement('div');
+  d.className='msg '+role;
+  const av=role==='user'
+    ?'<div class="av">U</div>'
+    :'<div class="av">DM</div>';
+  d.innerHTML=`${av}<div class="bubble">${html}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+  return d;
+}
+
+function appendThinking(){
+  const msgs=document.getElementById('messages');
+  const d=document.createElement('div');
+  d.className='msg ai';d.id='thinking';
+  d.innerHTML='<div class="av">DM</div><div class="bubble"><div class="thinking-dots"><span></span><span></span><span></span></div></div>';
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function formatResponse(text){
+  // Convert markdown-ish to HTML
+  return text
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>')
+    .replace(/\n\n+/g,'</p><p>')
+    .replace(/\n- /g,'</p><ul><li>')
+    .replace(/\n\d+\. /g,'</li></ul><p>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+
+async function send(){
+  const input=document.getElementById('qi');
+  const q=input.value.trim();
+  if(!q) return;
+  const ready=docs.filter(d=>d.status==='ok');
+  if(!ready.length){toast('Upload and wait for files to finish extracting','err');return;}
+
+  input.value='';input.style.height='auto';
+  document.getElementById('sendBtn').disabled=true;
+
+  appendMsg('user',q.replace(/</g,'&lt;'));
+  history.push({role:'user',content:q});
+  appendThinking();
+
+  const docContext=buildContext();
+  const system=`You are DocuMind AI, a precise document assistant that ONLY answers based on the content provided below.
+
+RULES:
+1. Answer ONLY from the document content provided. Do not use outside knowledge.
+2. If the answer is not in the documents, say exactly: "I couldn't find that in the uploaded documents."
+3. When quoting or referencing specific information, mention which file it came from.
+4. Be precise and cite specific details from the text.
+5. For Excel/CSV data, reference actual column names, values, and row data from the content.
+6. For PDFs, reference the page number if available.
+
+${docContext}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        system,
+        messages:history
+      })
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+
+    const reply=data.content?.map(b=>b.text||'').join('').trim()||'No response received.';
+    document.getElementById('thinking')?.remove();
+    history.push({role:'assistant',content:reply});
+
+    const fileNames=ready.map(d=>d.name).join(', ');
+    const html=formatResponse(reply)+`<div class="src-tag">📎 Based on: ${fileNames}</div>`;
+    appendMsg('ai',html);
+  }catch(err){
+    document.getElementById('thinking')?.remove();
+    appendMsg('ai',`<span style="color:#FF9090">⚠ Error: ${err.message}</span>`);
+  }
+
+  document.getElementById('sendBtn').disabled=docs.filter(d=>d.status==='ok').length===0;
+  document.getElementById('qi').focus();
+}
+
+// ── Toast ──
+function toast(msg,type='ok'){
+  const t=document.createElement('div');
+  t.className='toast '+(type==='err'?'err':'ok');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+</script>
+</body>
+</html>
