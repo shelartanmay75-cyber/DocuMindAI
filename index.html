@@ -238,11 +238,11 @@ footer{border-top:1px solid var(--border);padding:1.75rem 2.5rem;display:flex;al
     DocuMind<span> AI</span>
   </a>
   <ul class="nav-links">
-    <li><a href="#app">Try It</a></li>
-    <li><a href="#how">How It Works</a></li>
-    <li><a href="#uc">Use Cases</a></li>
+    <li><a href="javascript:void(0)" onclick="goTo('#app')">Try It</a></li>
+    <li><a href="javascript:void(0)" onclick="goTo('#how')">How It Works</a></li>
+    <li><a href="javascript:void(0)" onclick="goTo('#uc')">Use Cases</a></li>
   </ul>
-  <button class="nav-cta" onclick="scrollTo('#app')">Get Started</button>
+  <button class="nav-cta" onclick="goTo('#app')">Get Started</button>
 </nav>
 
 <!-- HERO -->
@@ -258,8 +258,8 @@ footer{border-top:1px solid var(--border);padding:1.75rem 2.5rem;display:flex;al
   <h1>Your Documents.<br>Your <span class="hl">Questions.</span><br>Real Answers.</h1>
   <p class="hero-tagline"><span>Upload.</span> &nbsp;Ask. &nbsp;<span>Understand.</span></p>
   <div class="hero-actions">
-    <button class="btn-primary" onclick="scrollTo('#app')">Start Asking →</button>
-    <button class="btn-ghost" onclick="scrollTo('#how')">How It Works</button>
+    <button class="btn-primary" onclick="goTo('#app')">Start Asking →</button>
+    <button class="btn-ghost" onclick="goTo('#how')">How It Works</button>
   </div>
   <div class="formats-row">
     <div class="fmt">📄 PDF</div>
@@ -314,7 +314,7 @@ footer{border-top:1px solid var(--border);padding:1.75rem 2.5rem;display:flex;al
           </div>
           <div class="rag-badge">
             <span style="width:5px;height:5px;background:var(--teal);border-radius:50%;animation:pulse 2s infinite;display:inline-block"></span>
-            RAG · Real Extraction
+            RAG · Groq LLaMA 3.3
           </div>
         </div>
 
@@ -349,7 +349,7 @@ footer{border-top:1px solid var(--border);padding:1.75rem 2.5rem;display:flex;al
 <section id="how">
   <div class="section-title">
     <h2>How It <span style="color:var(--teal)">Works</span></h2>
-    <p>True RAG — your content is extracted in the browser, then sent to Claude AI</p>
+    <p>True RAG — your content is extracted in the browser, then sent to Groq AI</p>
   </div>
   <div class="steps">
     <div class="step">
@@ -359,13 +359,13 @@ footer{border-top:1px solid var(--border);padding:1.75rem 2.5rem;display:flex;al
     </div>
     <div class="step">
       <div class="step-n">02</div><div class="step-i">🔍</div>
-      <h4>Content Is Sent to Claude</h4>
-      <p>The extracted text becomes the context window. Claude reads your actual document — no guessing, no hallucinations about what might be in it.</p>
+      <h4>Content Is Sent to Groq AI</h4>
+      <p>The extracted text becomes the context window. LLaMA 3.3 70B on Groq reads your actual document — no guessing, no hallucinations about what might be in it.</p>
     </div>
     <div class="step">
       <div class="step-n">03</div><div class="step-i">💬</div>
       <h4>Grounded Answers</h4>
-      <p>Every answer is derived from your document's real content. If it's not in the file, Claude says so — complete honesty about what the document contains.</p>
+      <p>Every answer is derived from your document's real content. If it's not in the file, Groq says so — complete honesty about what the document contains.</p>
     </div>
   </div>
 </section>
@@ -382,7 +382,7 @@ footer{border-top:1px solid var(--border);padding:1.75rem 2.5rem;display:flex;al
     <div class="uc-card"><div class="uc-icon">🔬</div><div class="uc-tag">Researchers</div><h4>Deep Research</h4><p>Upload multiple papers. Ask cross-document questions, find methodologies, or compare findings across your literature corpus.</p></div>
     <div class="uc-card"><div class="uc-icon">👩‍🏫</div><div class="uc-tag">Educators</div><h4>Prepare Better</h4><p>Generate discussion questions and quizzes directly from your course material. Build lesson content from what's already in your documents.</p></div>
     <div class="uc-card"><div class="uc-icon">⚖️</div><div class="uc-tag">Legal</div><h4>Parse Contracts</h4><p>Ask plain-language questions about complex legal documents. Find clauses, obligations, and deadlines from the actual contract text.</p></div>
-    <div class="uc-card"><div class="uc-icon">📊</div><div class="uc-tag">Analysts</div><h4>Data Narratives</h4><p>Upload Excel reports and financial statements. Ask about specific figures, totals, and trends — Claude reads your actual numbers.</p></div>
+    <div class="uc-card"><div class="uc-icon">📊</div><div class="uc-tag">Analysts</div><h4>Data Narratives</h4><p>Upload Excel reports and financial statements. Ask about specific figures, totals, and trends — Groq reads your actual numbers.</p></div>
   </div>
 </section>
 
@@ -407,11 +407,15 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
   });
 })();
 
-function scrollTo(sel){document.querySelector(sel).scrollIntoView({behavior:'smooth'})}
+function goTo(sel){document.querySelector(sel).scrollIntoView({behavior:'smooth'})}
+
+// ── PASTE YOUR GROQ API KEY HERE ──
+// Get a FREE key at: https://console.groq.com (no credit card needed)
+const GROQ_API_KEY = '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';
 
 // ── State ──
 const docs=[];       // {name, ext, text, chars}
-let history=[];      // Claude conversation history
+let chatHistory=[];      // Claude conversation history
 const MAX_CHARS=180000; // safe context limit
 
 // ── File type helpers ──
@@ -686,43 +690,57 @@ async function send(){
   const ready=docs.filter(d=>d.status==='ok');
   if(!ready.length){toast('Upload and wait for files to finish extracting','err');return;}
 
+  if(GROQ_API_KEY==='YOUR_GROQ_API_KEY_HERE'){
+    toast('⚠ Please add your Groq API key in the code first!','err');
+    appendMsg('ai','<span style="color:#FF9090">⚠ No API key set. Open the HTML file, find <strong>GROQ_API_KEY</strong> at the top of the script and paste your free key from <a href="https://console.groq.com" target="_blank" style="color:var(--teal)">console.groq.com</a></span>');
+    return;
+  }
+
   input.value='';input.style.height='auto';
   document.getElementById('sendBtn').disabled=true;
 
   appendMsg('user',q.replace(/</g,'&lt;'));
-  history.push({role:'user',content:q});
+  chatHistory.push({role:'user',content:q});
   appendThinking();
 
   const docContext=buildContext();
-  const system=`You are DocuMind AI, a precise document assistant that ONLY answers based on the content provided below.
+
+  const systemInstruction=`You are DocuMind AI, a precise document assistant that ONLY answers based on the document content provided.
 
 RULES:
-1. Answer ONLY from the document content provided. Do not use outside knowledge.
+1. Answer ONLY from the document content provided below. Do not use outside knowledge.
 2. If the answer is not in the documents, say exactly: "I couldn't find that in the uploaded documents."
-3. When quoting or referencing specific information, mention which file it came from.
+3. When referencing specific information, mention which file it came from.
 4. Be precise and cite specific details from the text.
-5. For Excel/CSV data, reference actual column names, values, and row data from the content.
+5. For Excel/CSV data, reference actual column names and values from the content.
 6. For PDFs, reference the page number if available.
 
 ${docContext}`;
 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`
+      },
       body:JSON.stringify({
-        model:'claude-sonnet-4-6',
+        model:'llama-3.3-70b-versatile',
         max_tokens:1000,
-        system,
-        messages:history
+        temperature:0.2,
+        messages:[
+          {role:'system', content:systemInstruction},
+          ...chatHistory
+        ]
       })
     });
     const data=await res.json();
-    if(data.error) throw new Error(data.error.message);
 
-    const reply=data.content?.map(b=>b.text||'').join('').trim()||'No response received.';
+    if(data.error) throw new Error(data.error.message||JSON.stringify(data.error));
+
+    const reply=data.choices?.[0]?.message?.content?.trim()||'No response received.';
     document.getElementById('thinking')?.remove();
-    history.push({role:'assistant',content:reply});
+    chatHistory.push({role:'assistant',content:reply});
 
     const fileNames=ready.map(d=>d.name).join(', ');
     const html=formatResponse(reply)+`<div class="src-tag">📎 Based on: ${fileNames}</div>`;
